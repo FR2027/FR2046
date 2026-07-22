@@ -219,16 +219,16 @@
 
         let gameState = 'START';
         let score = 0;
-        let gameSpeed = 8.5;
-        let baseGravity = 0.95;
+        let gameSpeed = 8.0; // 微調初始速度，讓玩家更好上手
+        let baseGravity = 0.90; // 優化重力，使跳躍手感更滑順
 
         let player = {
             x: 140,
-            y: 220, // 初始位置調整至畫面正中央懸空，避免一開始直接觸底死亡
+            y: 220,
             size: 38,
             vy: 0,
             gravity: baseGravity,
-            jumpPower: -13.5,
+            jumpPower: -13.0,
             rotation: 0,
             isGrounded: false
         };
@@ -307,14 +307,14 @@
 
         function resetValues() {
             score = 0;
-            gameSpeed = 8.5;
+            gameSpeed = 8.0;
             obstacles = [];
             particles = [];
-            player.y = 220; // 確保每次重新開始時方塊也保持在懸空安全位置
+            player.y = 220;
             player.vy = 0;
             player.rotation = 0;
             player.isGrounded = false;
-            frameCount = 0;
+            frameCount = -70; // 增加開場安全時間
         }
 
         function togglePause() {
@@ -328,33 +328,58 @@
             }
         }
 
+        // 優化障礙物生成邏輯，保證上下夾擊時中間「絕對留有安全通道」，避免必死局
         function spawnObstacle() {
-            const minHeight = 60;
-            const maxHeight = 160;
-            const type = Math.floor(Math.random() * 3);
-            const obstacleWidth = 35;
             const topBoundary = 50;
             const bottomBoundary = 450;
+            const totalHeight = bottomBoundary - topBoundary; // 400
+            const obstacleWidth = 38;
 
-            if (type === 0 || type === 2) {
-                const h = Math.random() * (maxHeight - minHeight) + minHeight;
+            // 隨機選擇類型：0 = 僅底部柱子, 1 = 僅頂部柱子, 2 = 上下夾擊通道
+            const type = Math.floor(Math.random() * 3);
+
+            if (type === 0) {
+                // 僅底部柱子 (高度安全範圍)
+                const h = Math.random() * 110 + 60; // 高度 60 ~ 170
                 obstacles.push({
                     x: canvas.width,
                     y: bottomBoundary - h,
                     width: obstacleWidth,
-                    height: h,
-                    isTop: false
+                    height: h
                 });
-            }
-
-            if (type === 1 || type === 2) {
-                const h = Math.random() * (maxHeight - minHeight) + minHeight;
+            } else if (type === 1) {
+                // 僅頂部柱子
+                const h = Math.random() * 110 + 60;
                 obstacles.push({
                     x: canvas.width,
                     y: topBoundary,
                     width: obstacleWidth,
-                    height: h,
-                    isTop: true
+                    height: h
+                });
+            } else {
+                // 上下夾擊：強制確保中間保留至少 160px 的通關空隙，絕對不會卡死
+                const minGap = 160; 
+                const maxTopH = totalHeight - minGap - 60; // 頂部最大高度
+                const topH = Math.random() * (maxTopH - 60) + 60;
+                
+                const gapY1 = topBoundary + topH;
+                const gapY2 = gapY1 + minGap;
+                const bottomH = bottomBoundary - gapY2;
+
+                // 頂部障礙
+                obstacles.push({
+                    x: canvas.width,
+                    y: topBoundary,
+                    width: obstacleWidth,
+                    height: topH
+                });
+
+                // 底部障礙
+                obstacles.push({
+                    x: canvas.width,
+                    y: gapY2,
+                    width: obstacleWidth,
+                    height: bottomH
                 });
             }
         }
@@ -362,11 +387,14 @@
         function update() {
             if (gameState !== 'PLAYING') return;
 
-            gameSpeed += 0.003;
+            // 限制速度增長幅度，避免後期速度過快導致完全反應不過來
+            if (gameSpeed < 13.5) {
+                gameSpeed += 0.002;
+            }
             score += Math.floor(gameSpeed / 4);
 
             document.getElementById('scoreVal').innerText = score;
-            document.getElementById('speedVal').innerText = (gameSpeed / 8.5).toFixed(1);
+            document.getElementById('speedVal').innerText = (gameSpeed / 8.0).toFixed(1);
 
             player.vy += player.gravity;
             player.y += player.vy;
@@ -388,7 +416,7 @@
                 }
             });
 
-            if (frameCount % 2 === 0) {
+            if (frameCount >= 0 && frameCount % 2 === 0) {
                 particles.push({
                     x: player.x,
                     y: player.y + player.size / 2,
@@ -409,15 +437,19 @@
             }
 
             frameCount++;
-            let spawnInterval = Math.max(38, Math.floor(85 - gameSpeed * 2.5));
-            if (frameCount % spawnInterval === 0) {
-                spawnObstacle();
+            if (frameCount >= 0) {
+                // 調整生成間距（拉開障礙物距離，避免連發導致必死）
+                let spawnInterval = Math.max(55, Math.floor(100 - gameSpeed * 2.2));
+                if (frameCount % spawnInterval === 0) {
+                    spawnObstacle();
+                }
             }
 
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].x -= gameSpeed;
 
-                let padding = 5;
+                // 稍微縮小碰撞判定框 (Hitbox Padding)，讓玩家擦邊時比較寬容，不會死得莫名其妙
+                let padding = 7;
                 if (
                     player.x + padding < obstacles[i].x + obstacles[i].width - padding &&
                     player.x + player.size - padding > obstacles[i].x + padding &&
