@@ -48,7 +48,6 @@
             height: 100%;
             cursor: pointer;
         }
-        /* 遊戲中 HUD 介面 */
         .ui-layer {
             position: absolute;
             top: 0;
@@ -71,7 +70,6 @@
             color: #ffffff;
             font-weight: 900;
         }
-        /* 右上角方形精緻暫停按鈕 */
         .pause-btn {
             pointer-events: auto;
             background: rgba(0, 240, 255, 0.12);
@@ -100,7 +98,6 @@
         .pause-btn:active {
             transform: scale(0.95);
         }
-        /* 高質感毛玻璃遮罩面板 */
         .overlay-screen {
             position: absolute;
             top: 0;
@@ -187,17 +184,14 @@
     <div id="game-container">
         <canvas id="gameCanvas" width="900" height="500"></canvas>
         
-        <!-- 遊戲中 HUD 介面 -->
         <div class="ui-layer" id="hud-layer">
             <div class="hud-left">
                 <div>分數 / SCORE: <span id="scoreVal">0</span></div>
                 <div>速度倍率 / SPEED: <span id="speedVal">1.0</span>x</div>
             </div>
-            <!-- 右上角方形精緻暫停按鈕 -->
             <button class="pause-btn" id="pauseBtn" onclick="togglePause()" title="暫停">❚❚</button>
         </div>
 
-        <!-- 1. 開始畫面 -->
         <div class="overlay-screen" id="start-screen">
             <h1>賽博幾何</h1>
             <p>CYBER DASH // 雙向障礙極速跑酷</p>
@@ -205,7 +199,6 @@
             <div class="controls-hint">操作方式：點擊螢幕 / 空白鍵 / 向上鍵跳躍（支援連跳，閃避上下障礙物）</div>
         </div>
 
-        <!-- 2. 暫停選單 -->
         <div class="overlay-screen" id="pause-screen">
             <h1>系統暫停</h1>
             <p>SYSTEM PAUSED</p>
@@ -213,7 +206,6 @@
             <button class="menu-btn" onclick="restartGame()">重新開始</button>
         </div>
 
-        <!-- 3. 遊戲結束畫面 -->
         <div class="overlay-screen" id="gameover-screen">
             <h2>系統崩潰</h2>
             <p>最終得分 / FINAL SCORE: <span id="finalScoreVal">0</span></p>
@@ -225,17 +217,14 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // 遊戲狀態：'START', 'PLAYING', 'PAUSED', 'GAMEOVER'
         let gameState = 'START';
-
         let score = 0;
-        let gameSpeed = 8.5; // 調高初始速度
+        let gameSpeed = 8.5;
         let baseGravity = 0.95;
 
-        // 方形玩家物件 (支援轉動與連跳)
         let player = {
             x: 140,
-            y: 250,
+            y: 220, // 初始位置調整至畫面正中央懸空，避免一開始直接觸底死亡
             size: 38,
             vy: 0,
             gravity: baseGravity,
@@ -249,7 +238,6 @@
         let backgroundLines = [];
         let frameCount = 0;
 
-        // 初始化背景動態科技線條
         for (let i = 0; i < 15; i++) {
             backgroundLines.push({
                 x: Math.random() * canvas.width,
@@ -259,7 +247,6 @@
             });
         }
 
-        // 鍵盤控制監聽
         window.addEventListener('keydown', e => {
             if (e.code === 'Space' || e.code === 'ArrowUp') {
                 e.preventDefault();
@@ -278,7 +265,6 @@
             }
         });
 
-        // 畫布點擊控制跳躍（支援手機與滑鼠，支援連跳）
         canvas.addEventListener('click', (e) => {
             if (gameState === 'PLAYING') {
                 jump();
@@ -289,7 +275,6 @@
             player.vy = player.jumpPower;
             player.isGrounded = false;
             
-            // 產生多點高科技跳躍粒子特效
             for(let i = 0; i < 10; i++) {
                 particles.push({
                     x: player.x + player.size / 2,
@@ -303,7 +288,6 @@
             }
         }
 
-        // 開始遊戲
         function startGame() {
             gameState = 'PLAYING';
             document.getElementById('start-screen').style.display = 'none';
@@ -312,7 +296,6 @@
             requestAnimationFrame(loop);
         }
 
-        // 重新遊玩
         function restartGame() {
             gameState = 'PLAYING';
             document.getElementById('pause-screen').style.display = 'none';
@@ -324,17 +307,16 @@
 
         function resetValues() {
             score = 0;
-            gameSpeed = 8.5; // 重置為較快的初始速度
+            gameSpeed = 8.5;
             obstacles = [];
             particles = [];
-            player.y = 250;
+            player.y = 220; // 確保每次重新開始時方塊也保持在懸空安全位置
             player.vy = 0;
             player.rotation = 0;
             player.isGrounded = false;
             frameCount = 0;
         }
 
-        // 暫停切換
         function togglePause() {
             if (gameState === 'PLAYING') {
                 gameState = 'PAUSED';
@@ -346,20 +328,15 @@
             }
         }
 
-        // 隨機生成上下障礙物 (Geometry Dash 風格)
         function spawnObstacle() {
             const minHeight = 60;
             const maxHeight = 160;
-            
-            // 隨機決定障礙物類型：0 = 僅底部柱子, 1 = 僅頂部柱子, 2 = 上下夾擊 (留出中間通道)
             const type = Math.floor(Math.random() * 3);
-            
             const obstacleWidth = 35;
             const topBoundary = 50;
             const bottomBoundary = 450;
 
             if (type === 0 || type === 2) {
-                // 底部障礙物
                 const h = Math.random() * (maxHeight - minHeight) + minHeight;
                 obstacles.push({
                     x: canvas.width,
@@ -371,7 +348,6 @@
             }
 
             if (type === 1 || type === 2) {
-                // 頂部障礙物
                 const h = Math.random() * (maxHeight - minHeight) + minHeight;
                 obstacles.push({
                     x: canvas.width,
@@ -386,21 +362,16 @@
         function update() {
             if (gameState !== 'PLAYING') return;
 
-            // 越玩速度越快
             gameSpeed += 0.003;
             score += Math.floor(gameSpeed / 4);
 
             document.getElementById('scoreVal').innerText = score;
             document.getElementById('speedVal').innerText = (gameSpeed / 8.5).toFixed(1);
 
-            // 玩家物理運算 (支援連跳與動態重力)
             player.vy += player.gravity;
             player.y += player.vy;
-
-            // 角色飛行旋轉動畫
             player.rotation += gameSpeed * 0.03;
 
-            // 上下邊界撞擊判定 (天花板與地板碰撞即死亡)
             const topLimit = 50;
             const bottomLimit = 450 - player.size;
 
@@ -409,7 +380,6 @@
                 return;
             }
 
-            // 動態背景科技線條更新
             backgroundLines.forEach(line => {
                 line.x -= line.speed * (gameSpeed * 0.3);
                 if (line.x < -100) {
@@ -418,7 +388,6 @@
                 }
             });
 
-            // 跑動尾跡粒子
             if (frameCount % 2 === 0) {
                 particles.push({
                     x: player.x,
@@ -431,7 +400,6 @@
                 });
             }
 
-            // 粒子更新
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
                 p.x += p.vx;
@@ -440,14 +408,12 @@
                 if (p.life <= 0) particles.splice(i, 1);
             }
 
-            // 障礙物生成頻率隨速度調整
             frameCount++;
             let spawnInterval = Math.max(38, Math.floor(85 - gameSpeed * 2.5));
             if (frameCount % spawnInterval === 0) {
                 spawnObstacle();
             }
 
-            // 移動與碰撞檢測 (精確 AABB 碰撞箱檢查，撞到任何上下障礙物皆死亡)
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].x -= gameSpeed;
 
@@ -462,7 +428,6 @@
                     return;
                 }
 
-                // 移除超出畫面的障礙物
                 if (obstacles[i].x + obstacles[i].width < 0) {
                     obstacles.splice(i, 1);
                 }
@@ -475,7 +440,6 @@
             document.getElementById('finalScoreVal').innerText = score;
             document.getElementById('gameover-screen').style.display = 'flex';
 
-            // 死亡爆炸粒子特效
             for(let i = 0; i < 25; i++) {
                 particles.push({
                     x: player.x + player.size / 2,
@@ -490,11 +454,9 @@
         }
 
         function draw() {
-            // 清空畫面背景
             ctx.fillStyle = '#060810';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 繪製背景流動科技線條
             ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
             ctx.lineWidth = 1.5;
             backgroundLines.forEach(line => {
@@ -504,26 +466,22 @@
                 ctx.stroke();
             });
 
-            // 繪製上下高科技防護邊界 (Geometry Dash 風格上下框線)
             ctx.strokeStyle = '#00f0ff';
             ctx.lineWidth = 4;
             ctx.shadowBlur = 15;
             ctx.shadowColor = '#00f0ff';
             
-            // 頂部框線
             ctx.beginPath();
             ctx.moveTo(0, 50);
             ctx.lineTo(canvas.width, 50);
             ctx.stroke();
 
-            // 底部框線
             ctx.beginPath();
             ctx.moveTo(0, 450);
             ctx.lineTo(canvas.width, 450);
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            // 上下防護區塊漸層填色
             let topGradient = ctx.createLinearGradient(0, 0, 0, 50);
             topGradient.addColorStop(0, 'rgba(0, 240, 255, 0.3)');
             topGradient.addColorStop(1, 'transparent');
@@ -536,38 +494,32 @@
             ctx.fillStyle = bottomGradient;
             ctx.fillRect(0, 450, canvas.width, 50);
 
-            // 繪製粒子特效
             particles.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.fillRect(p.x, p.y, p.size, p.size);
             });
 
-            // 繪製旋轉方形角色 (Geometry Dash 風格)
             ctx.save();
             ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
             ctx.rotate(player.rotation);
 
-            // 角色主體發光方形
             ctx.fillStyle = '#00f0ff';
             ctx.shadowBlur = 22;
             ctx.shadowColor = '#00f0ff';
             ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
 
-            // 角色內部核心
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(-player.size / 4, -player.size / 4, player.size / 2, player.size / 2);
 
             ctx.restore();
             ctx.shadowBlur = 0;
 
-            // 繪製隨機上下障礙物 (霓虹粉紅幾何柱體)
             ctx.fillStyle = '#ff0055';
             ctx.shadowColor = '#ff0055';
             obstacles.forEach(obs => {
                 ctx.shadowBlur = 12;
                 ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
                 
-                // 障礙物高光邊框
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 1.5;
                 ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
@@ -581,12 +533,10 @@
             if (gameState === 'PLAYING') {
                 requestAnimationFrame(loop);
             } else if (gameState === 'GAMEOVER') {
-                // 稍微跑幾格讓爆炸粒子動畫播完
                 let particleAnimationCount = 0;
                 function renderDeathAnim() {
                     if (gameState === 'GAMEOVER' && particleAnimationCount < 40) {
                         particleAnimationCount++;
-                        // 更新粒子
                         for (let i = particles.length - 1; i >= 0; i--) {
                             let p = particles[i];
                             p.x += p.vx;
@@ -602,7 +552,6 @@
             }
         }
 
-        // 初始渲染背景
         draw();
     </script>
 </body>
