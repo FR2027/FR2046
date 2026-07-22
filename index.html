@@ -367,11 +367,11 @@
 
         let gameState = 'START';
         let score = 0;
-        let gameSpeed = 7.0 * 1.3;
+        let gameSpeed = 8.0 * 1.3;
         
-        // 針對手機與高更新率螢幕調整更平緩的重力與跳躍力道
-        let baseGravity = isMobile ? 0.75 : 0.95;
-        let jumpPower = isMobile ? -11.5 : -13.0;
+        // 嚴格區分：電腦版維持你原本完美的重力(1.45)與跳躍(-16.2)；手機版獨立使用緩和數值
+        let baseGravity = isMobile ? 0.75 : 1.45;
+        let jumpPower = isMobile ? -11.5 : -16.2;
 
         let player = {
             x: 140,
@@ -583,7 +583,7 @@
 
         function resetValues() {
             score = 0;
-            gameSpeed = 7.0 * 1.3;
+            gameSpeed = 8.0 * 1.3;
             obstacles = [];
             particles = [];
             player.x = 140;
@@ -638,7 +638,7 @@
                     height: h
                 });
             } else {
-                const minGap = 165; 
+                const minGap = 160; 
                 const maxTopH = totalHeight - minGap - 60;
                 const topH = Math.random() * (maxTopH - 60) + 60;
                 
@@ -665,8 +665,8 @@
         function update(dt) {
             if (gameState !== 'PLAYING') return;
 
-            // 確保 dt 係數穩定，避免畫面卡頓或高更新率造成物理崩潰
-            let timeScale = dt / (1000 / 60);
+            // 電腦版維持原本固定的 1 帧物理速率，確保手感完全不變；手機版才引入 dt 補償高更新率
+            let timeScale = isMobile ? (dt / (1000 / 60)) : 1.0;
             if (timeScale > 2.0) timeScale = 2.0;
 
             score += Math.floor(gameSpeed / 4);
@@ -747,7 +747,7 @@
 
             frameCount += timeScale;
             if (frameCount >= 0) {
-                let spawnInterval = 85;
+                let spawnInterval = 75;
                 if (Math.floor(frameCount) % spawnInterval < timeScale) {
                     spawnObstacle();
                 }
