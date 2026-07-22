@@ -264,7 +264,7 @@
             <h1>賽博方程</h1>
             <p>FR科技公司製作 本網站僅供演示效果使用</p>
             <button class="menu-btn" onclick="startGame()">點擊開始遊戲</button>
-            <div class="controls-hint">操作：點擊/空白鍵跳躍 | 長按 1 秒啟動：貼地、向右平移2秒、邊框漸紫</div>
+            <div class="controls-hint">操作：點擊/空白鍵跳躍 | 長按 0.2 秒啟動：高速平移、維持高度、邊框漸紫</div>
         </div>
 
         <div class="overlay-screen" id="pause-screen">
@@ -311,7 +311,7 @@
 
         let gameState = 'START';
         let score = 0;
-        let gameSpeed = 8.0 * 1.3; // 固定 1.3 倍速 (8.0 * 1.3 = 10.4)
+        let gameSpeed = 8.0 * 1.3; // 固定 1.3 倍速
         let baseGravity = 1.45;
 
         let player = {
@@ -354,11 +354,12 @@
                     if (!isHolding) {
                         isHolding = true;
                         jump();
+                        // 改為 0.2 秒 (200ms) 觸發長按平移機制
                         pressTimer = setTimeout(() => {
                             if (isHolding) {
                                 triggerDashState();
                             }
-                        }, 1000);
+                        }, 200);
                     }
                 } else if (gameState === 'START') {
                     startGame();
@@ -386,7 +387,7 @@
                         if (isHolding) {
                             triggerDashState();
                         }
-                    }, 1000);
+                    }, 200);
                 }
             }
         });
@@ -404,7 +405,7 @@
                         if (isHolding) {
                             triggerDashState();
                         }
-                    }, 1000);
+                    }, 200);
                 }
             }
         });
@@ -498,7 +499,7 @@
 
         function resetValues() {
             score = 0;
-            gameSpeed = 8.0 * 1.3; // 維持固定 1.3 倍速
+            gameSpeed = 8.0 * 1.3;
             obstacles = [];
             particles = [];
             player.x = 140;
@@ -578,7 +579,6 @@
         function update() {
             if (gameState !== 'PLAYING') return;
 
-            // 廢除速度遞增，固定計算分數
             score += Math.floor(gameSpeed / 4);
 
             document.getElementById('scoreVal').innerText = score;
@@ -587,19 +587,19 @@
             const bottomLimit = 450 - player.size;
 
             if (player.isDash) {
-                player.y = bottomLimit;
+                // 平移時：不要往下掉，重力與垂直速度歸零，維持當前高度
                 player.vy = 0;
-                player.floorTimer = 0;
             } else {
                 player.vy += player.gravity;
                 player.y += player.vy;
             }
 
+            // 平移時改為快速移動（系數從 0.15 提升至 0.4 讓平移反應變快）
             let targetX = player.baseX;
             if (player.isDash) {
                 targetX = player.baseX + 120;
             }
-            player.x += (targetX - player.x) * 0.15;
+            player.x += (targetX - player.x) * 0.4;
 
             player.rotation += (player.targetRotation - player.rotation) * 0.2;
 
@@ -659,7 +659,7 @@
 
             frameCount++;
             if (frameCount >= 0) {
-                let spawnInterval = 75; // 固定障礙物生成頻率
+                let spawnInterval = 75;
                 if (frameCount % spawnInterval === 0) {
                     spawnObstacle();
                 }
@@ -822,7 +822,7 @@
                         for (let i = particles.length - 1; i >= 0; i--) {
                             let p = particles[i];
                             p.x += p.vx;
-                            p.y += p.vy;
+                            p.y += p.y + p.vy - p.y; // ＦＲ
                             p.life--;
                             if (p.life <= 0) particles.splice(i, 1);
                         }
