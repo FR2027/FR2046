@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>賽博疾風 - 高科技電競跑酷</title>
+    <title>CYBER DASH - 賽博幾何跑酷</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         * {
@@ -13,6 +13,7 @@
             font-family: 'Orbitron', sans-serif;
             user-select: none;
             -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
         body {
             background-color: #030408;
@@ -23,23 +24,23 @@
             align-items: center;
             overflow: hidden;
             background-image: 
-                radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
-                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
+                radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.12) 0%, transparent 70%),
+                linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+            background-size: 100% 100%, 35px 35px, 35px 35px;
         }
         #game-container {
             position: relative;
             width: 900px;
             max-width: 100%;
             height: 500px;
-            background: rgba(10, 11, 20, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 240, 255, 0.4);
-            box-shadow: 0 0 40px rgba(0, 240, 255, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.1);
+            background: rgba(8, 10, 18, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 240, 255, 0.5);
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.3), inset 0 0 25px rgba(0, 240, 255, 0.15);
             overflow: hidden;
-            border-radius: 8px;
+            border-radius: 12px;
         }
         canvas {
             display: block;
@@ -57,38 +58,47 @@
             pointer-events: none;
             display: none;
             justify-content: space-between;
-            padding: 25px;
+            padding: 20px;
             z-index: 5;
         }
         .hud-left {
-            font-size: 16px;
+            font-size: 15px;
             text-shadow: 0 0 10px #00f0ff;
             letter-spacing: 1px;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         .hud-left span {
             color: #ffffff;
             font-weight: 900;
         }
+        /* 右上角方形精緻暫停按鈕 */
         .pause-btn {
             pointer-events: auto;
-            background: rgba(0, 240, 255, 0.1);
+            background: rgba(0, 240, 255, 0.12);
             border: 1px solid #00f0ff;
             color: #00f0ff;
-            padding: 10px 20px;
-            font-weight: 700;
-            font-size: 14px;
+            width: 44px;
+            height: 44px;
+            font-weight: 900;
+            font-size: 16px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
-            backdrop-filter: blur(5px);
-            border-radius: 4px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .pause-btn:hover {
             background: #00f0ff;
             color: #030408;
             box-shadow: 0 0 25px #00f0ff;
-            transform: scale(1.05);
+            transform: scale(1.08);
+        }
+        .pause-btn:active {
+            transform: scale(0.95);
         }
         /* 高質感毛玻璃遮罩面板 */
         .overlay-screen {
@@ -97,9 +107,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(5, 6, 12, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(4, 5, 10, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -107,19 +117,19 @@
             z-index: 10;
         }
         .overlay-screen h1 {
-            font-size: 42px;
+            font-size: 44px;
             margin-bottom: 8px;
-            letter-spacing: 3px;
-            text-shadow: 0 0 20px #00f0ff, 0 0 40px rgba(0, 240, 255, 0.5);
+            letter-spacing: 4px;
+            text-shadow: 0 0 25px #00f0ff, 0 0 50px rgba(0, 240, 255, 0.6);
             color: #fff;
             text-align: center;
             font-weight: 900;
         }
         .overlay-screen h2 {
-            font-size: 36px;
+            font-size: 38px;
             margin-bottom: 12px;
-            letter-spacing: 3px;
-            text-shadow: 0 0 20px #ff0055, 0 0 40px rgba(255, 0, 85, 0.5);
+            letter-spacing: 4px;
+            text-shadow: 0 0 25px #ff0055, 0 0 50px rgba(255, 0, 85, 0.6);
             color: #ff0055;
             text-align: center;
             font-weight: 900;
@@ -132,25 +142,25 @@
             text-transform: uppercase;
         }
         .menu-btn {
-            background: rgba(0, 240, 255, 0.08);
+            background: rgba(0, 240, 255, 0.1);
             border: 2px solid #00f0ff;
             color: #00f0ff;
-            padding: 14px 40px;
+            padding: 14px 42px;
             font-size: 18px;
             font-weight: 900;
             cursor: pointer;
             margin: 8px;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
-            backdrop-filter: blur(6px);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
+            backdrop-filter: blur(8px);
             letter-spacing: 2px;
-            border-radius: 4px;
+            border-radius: 6px;
             pointer-events: auto;
         }
         .menu-btn:hover {
             background: #00f0ff;
             color: #030408;
-            box-shadow: 0 0 35px #00f0ff, inset 0 0 10px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 40px #00f0ff, inset 0 0 15px rgba(255, 255, 255, 0.6);
             transform: translateY(-2px);
         }
         .menu-btn:active {
@@ -183,15 +193,16 @@
                 <div>分數 / SCORE: <span id="scoreVal">0</span></div>
                 <div>速度倍率 / SPEED: <span id="speedVal">1.0</span>x</div>
             </div>
-            <button class="pause-btn" id="pauseBtn" onclick="togglePause()">暫停 / PAUSE</button>
+            <!-- 右上角方形精緻暫停按鈕 -->
+            <button class="pause-btn" id="pauseBtn" onclick="togglePause()" title="暫停">❚❚</button>
         </div>
 
         <!-- 1. 開始畫面 -->
         <div class="overlay-screen" id="start-screen">
-            <h1>賽博疾風</h1>
-            <p>CYBER RUN // 高科技極速跑酷電競</p>
+            <h1>賽博幾何</h1>
+            <p>CYBER DASH // 雙向障礙極速跑酷</p>
             <button class="menu-btn" onclick="startGame()">點擊開始遊戲</button>
-            <div class="controls-hint">操作方式：電腦請按空白鍵 / 向上鍵，手機直接點擊畫面跳躍</div>
+            <div class="controls-hint">操作方式：點擊螢幕 / 空白鍵 / 向上鍵跳躍（支援連跳，閃避上下障礙物）</div>
         </div>
 
         <!-- 2. 暫停選單 -->
@@ -218,24 +229,35 @@
         let gameState = 'START';
 
         let score = 0;
-        let gameSpeed = 6;
-        let baseGravity = 0.85;
+        let gameSpeed = 8.5; // 調高初始速度
+        let baseGravity = 0.95;
 
-        // 玩家物件
+        // 方形玩家物件 (支援轉動與連跳)
         let player = {
-            x: 120,
-            y: 380,
-            width: 34,
-            height: 48,
+            x: 140,
+            y: 250,
+            size: 38,
             vy: 0,
             gravity: baseGravity,
-            jumpPower: -14.5,
-            isGrounded: true
+            jumpPower: -13.5,
+            rotation: 0,
+            isGrounded: false
         };
 
         let obstacles = [];
         let particles = [];
+        let backgroundLines = [];
         let frameCount = 0;
+
+        // 初始化背景動態科技線條
+        for (let i = 0; i < 15; i++) {
+            backgroundLines.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                length: Math.random() * 80 + 40,
+                speed: Math.random() * 2 + 1
+            });
+        }
 
         // 鍵盤控制監聽
         window.addEventListener('keydown', e => {
@@ -256,7 +278,7 @@
             }
         });
 
-        // 畫布點擊控制跳躍（支援手機與滑鼠）
+        // 畫布點擊控制跳躍（支援手機與滑鼠，支援連跳）
         canvas.addEventListener('click', (e) => {
             if (gameState === 'PLAYING') {
                 jump();
@@ -264,20 +286,20 @@
         });
 
         function jump() {
-            if (player.isGrounded) {
-                player.vy = player.jumpPower;
-                player.isGrounded = false;
-                // 產生高科技跳躍粒子特效
-                for(let i = 0; i < 8; i++) {
-                    particles.push({
-                        x: player.x + player.width / 2,
-                        y: player.y + player.height,
-                        vx: (Math.random() - 0.5) * 4,
-                        vy: Math.random() * 3 + 1,
-                        color: '#00f0ff',
-                        life: 20
-                    });
-                }
+            player.vy = player.jumpPower;
+            player.isGrounded = false;
+            
+            // 產生多點高科技跳躍粒子特效
+            for(let i = 0; i < 10; i++) {
+                particles.push({
+                    x: player.x + player.size / 2,
+                    y: player.y + player.size / 2,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    color: '#00f0ff',
+                    size: Math.random() * 3 + 2,
+                    life: 25
+                });
             }
         }
 
@@ -296,19 +318,19 @@
             document.getElementById('pause-screen').style.display = 'none';
             document.getElementById('gameover-screen').style.display = 'none';
             document.getElementById('hud-layer').style.display = 'flex';
-            document.getElementById('pauseBtn').innerText = '暫停 / PAUSE';
             resetValues();
             requestAnimationFrame(loop);
         }
 
         function resetValues() {
             score = 0;
-            gameSpeed = 6;
+            gameSpeed = 8.5; // 重置為較快的初始速度
             obstacles = [];
             particles = [];
-            player.y = 380;
+            player.y = 250;
             player.vy = 0;
-            player.isGrounded = true;
+            player.rotation = 0;
+            player.isGrounded = false;
             frameCount = 0;
         }
 
@@ -317,57 +339,95 @@
             if (gameState === 'PLAYING') {
                 gameState = 'PAUSED';
                 document.getElementById('pause-screen').style.display = 'flex';
-                document.getElementById('pauseBtn').innerText = '繼續 / RESUME';
             } else if (gameState === 'PAUSED') {
                 gameState = 'PLAYING';
                 document.getElementById('pause-screen').style.display = 'none';
-                document.getElementById('pauseBtn').innerText = '暫停 / PAUSE';
                 requestAnimationFrame(loop);
             }
         }
 
-        // 生成障礙物
+        // 隨機生成上下障礙物 (Geometry Dash 風格)
         function spawnObstacle() {
-            const height = Math.random() * 50 + 25;
-            const width = Math.random() * 15 + 22;
-            obstacles.push({
-                x: canvas.width,
-                y: 430 - height,
-                width: width,
-                height: height
-            });
+            const minHeight = 60;
+            const maxHeight = 160;
+            
+            // 隨機決定障礙物類型：0 = 僅底部柱子, 1 = 僅頂部柱子, 2 = 上下夾擊 (留出中間通道)
+            const type = Math.floor(Math.random() * 3);
+            
+            const obstacleWidth = 35;
+            const topBoundary = 50;
+            const bottomBoundary = 450;
+
+            if (type === 0 || type === 2) {
+                // 底部障礙物
+                const h = Math.random() * (maxHeight - minHeight) + minHeight;
+                obstacles.push({
+                    x: canvas.width,
+                    y: bottomBoundary - h,
+                    width: obstacleWidth,
+                    height: h,
+                    isTop: false
+                });
+            }
+
+            if (type === 1 || type === 2) {
+                // 頂部障礙物
+                const h = Math.random() * (maxHeight - minHeight) + minHeight;
+                obstacles.push({
+                    x: canvas.width,
+                    y: topBoundary,
+                    width: obstacleWidth,
+                    height: h,
+                    isTop: true
+                });
+            }
         }
 
         function update() {
             if (gameState !== 'PLAYING') return;
 
-            // 速度隨著時間越跑越快
-            gameSpeed += 0.002;
-            score += Math.floor(gameSpeed / 3);
+            // 越玩速度越快
+            gameSpeed += 0.003;
+            score += Math.floor(gameSpeed / 4);
 
             document.getElementById('scoreVal').innerText = score;
-            document.getElementById('speedVal').innerText = (gameSpeed / 6).toFixed(1);
+            document.getElementById('speedVal').innerText = (gameSpeed / 8.5).toFixed(1);
 
-            // 玩家物理運算
+            // 玩家物理運算 (支援連跳與動態重力)
             player.vy += player.gravity;
             player.y += player.vy;
 
-            // 地板碰撞
-            if (player.y > 382) {
-                player.y = 382;
-                player.vy = 0;
-                player.isGrounded = true;
+            // 角色飛行旋轉動畫
+            player.rotation += gameSpeed * 0.03;
+
+            // 上下邊界撞擊判定 (天花板與地板碰撞即死亡)
+            const topLimit = 50;
+            const bottomLimit = 450 - player.size;
+
+            if (player.y < topLimit || player.y > bottomLimit) {
+                triggerGameOver();
+                return;
             }
 
+            // 動態背景科技線條更新
+            backgroundLines.forEach(line => {
+                line.x -= line.speed * (gameSpeed * 0.3);
+                if (line.x < -100) {
+                    line.x = canvas.width + 50;
+                    line.y = Math.random() * canvas.height;
+                }
+            });
+
             // 跑動尾跡粒子
-            if (player.isGrounded && frameCount % 3 === 0) {
+            if (frameCount % 2 === 0) {
                 particles.push({
                     x: player.x,
-                    y: player.y + player.height,
-                    vx: -gameSpeed * 0.5,
-                    vy: (Math.random() - 0.5) * 1,
-                    color: 'rgba(0, 240, 255, 0.6)',
-                    life: 15
+                    y: player.y + player.size / 2,
+                    vx: -gameSpeed * 0.6,
+                    vy: (Math.random() - 0.5) * 1.5,
+                    color: 'rgba(0, 240, 255, 0.7)',
+                    size: Math.random() * 3 + 1,
+                    life: 18
                 });
             }
 
@@ -380,29 +440,26 @@
                 if (p.life <= 0) particles.splice(i, 1);
             }
 
-            // 障礙物生成頻率隨速度加快
+            // 障礙物生成頻率隨速度調整
             frameCount++;
-            let spawnInterval = Math.max(30, Math.floor(90 - gameSpeed * 3.5));
+            let spawnInterval = Math.max(38, Math.floor(85 - gameSpeed * 2.5));
             if (frameCount % spawnInterval === 0) {
                 spawnObstacle();
             }
 
-            // 移動與碰撞檢測
+            // 移動與碰撞檢測 (精確 AABB 碰撞箱檢查，撞到任何上下障礙物皆死亡)
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].x -= gameSpeed;
 
-                // 精確 AABB 碰撞箱檢查
-                let padding = 6;
+                let padding = 5;
                 if (
                     player.x + padding < obstacles[i].x + obstacles[i].width - padding &&
-                    player.x + player.width - padding > obstacles[i].x + padding &&
+                    player.x + player.size - padding > obstacles[i].x + padding &&
                     player.y + padding < obstacles[i].y + obstacles[i].height - padding &&
-                    player.y + player.height - padding > obstacles[i].y + padding
+                    player.y + player.size - padding > obstacles[i].y + padding
                 ) {
-                    gameState = 'GAMEOVER';
-                    document.getElementById('hud-layer').style.display = 'none';
-                    document.getElementById('finalScoreVal').innerText = score;
-                    document.getElementById('gameover-screen').style.display = 'flex';
+                    triggerGameOver();
+                    return;
                 }
 
                 // 移除超出畫面的障礙物
@@ -412,76 +469,136 @@
             }
         }
 
+        function triggerGameOver() {
+            gameState = 'GAMEOVER';
+            document.getElementById('hud-layer').style.display = 'none';
+            document.getElementById('finalScoreVal').innerText = score;
+            document.getElementById('gameover-screen').style.display = 'flex';
+
+            // 死亡爆炸粒子特效
+            for(let i = 0; i < 25; i++) {
+                particles.push({
+                    x: player.x + player.size / 2,
+                    y: player.y + player.size / 2,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    color: '#ff0055',
+                    size: Math.random() * 4 + 2,
+                    life: 35
+                });
+            }
+        }
+
         function draw() {
             // 清空畫面背景
-            ctx.fillStyle = '#0a0b14';
+            ctx.fillStyle = '#060810';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 背景動態霓虹網格線條
-            ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
-            ctx.lineWidth = 1;
-            let gridOffset = (frameCount * (gameSpeed * 0.5)) % 40;
-            for (let x = -gridOffset; x < canvas.width; x += 40) {
+            // 繪製背景流動科技線條
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+            ctx.lineWidth = 1.5;
+            backgroundLines.forEach(line => {
                 ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
+                ctx.moveTo(line.x, line.y);
+                ctx.lineTo(line.x + line.length, line.y);
                 ctx.stroke();
-            }
+            });
 
-            // 科技感地平面
+            // 繪製上下高科技防護邊界 (Geometry Dash 風格上下框線)
             ctx.strokeStyle = '#00f0ff';
-            ctx.lineWidth = 3;
-            ctx.shadowBlur = 12;
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 15;
             ctx.shadowColor = '#00f0ff';
+            
+            // 頂部框線
             ctx.beginPath();
-            ctx.moveTo(0, 430);
-            ctx.lineTo(canvas.width, 430);
+            ctx.moveTo(0, 50);
+            ctx.lineTo(canvas.width, 50);
+            ctx.stroke();
+
+            // 底部框線
+            ctx.beginPath();
+            ctx.moveTo(0, 450);
+            ctx.lineTo(canvas.width, 450);
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            // 地面發光漸層底條
-            let floorGradient = ctx.createLinearGradient(0, 430, 0, 500);
-            floorGradient.addColorStop(0, 'rgba(0, 240, 255, 0.25)');
-            floorGradient.addColorStop(1, 'transparent');
-            ctx.fillStyle = floorGradient;
-            ctx.fillRect(0, 430, canvas.width, 70);
+            // 上下防護區塊漸層填色
+            let topGradient = ctx.createLinearGradient(0, 0, 0, 50);
+            topGradient.addColorStop(0, 'rgba(0, 240, 255, 0.3)');
+            topGradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = topGradient;
+            ctx.fillRect(0, 0, canvas.width, 50);
 
-            // 繪製粒子
+            let bottomGradient = ctx.createLinearGradient(0, 450, 0, 500);
+            bottomGradient.addColorStop(0, 'transparent');
+            bottomGradient.addColorStop(1, 'rgba(0, 240, 255, 0.3)');
+            ctx.fillStyle = bottomGradient;
+            ctx.fillRect(0, 450, canvas.width, 50);
+
+            // 繪製粒子特效
             particles.forEach(p => {
                 ctx.fillStyle = p.color;
-                ctx.fillRect(p.x, p.y, 3, 3);
+                ctx.fillRect(p.x, p.y, p.size, p.size);
             });
 
-            // 玩家機甲方塊
-            ctx.fillStyle = '#00f0ff';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#00f0ff';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-            
-            // 核心高光
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(player.x + 8, player.y + 8, player.width - 16, player.height - 16);
+            // 繪製旋轉方形角色 (Geometry Dash 風格)
+            ctx.save();
+            ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
+            ctx.rotate(player.rotation);
 
-            // 障礙物（霓虹粉紅）
+            // 角色主體發光方形
+            ctx.fillStyle = '#00f0ff';
+            ctx.shadowBlur = 22;
+            ctx.shadowColor = '#00f0ff';
+            ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
+
+            // 角色內部核心
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-player.size / 4, -player.size / 4, player.size / 2, player.size / 2);
+
+            ctx.restore();
+            ctx.shadowBlur = 0;
+
+            // 繪製隨機上下障礙物 (霓虹粉紅幾何柱體)
             ctx.fillStyle = '#ff0055';
             ctx.shadowColor = '#ff0055';
             obstacles.forEach(obs => {
+                ctx.shadowBlur = 12;
                 ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                
+                // 障礙物高光邊框
                 ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1;
+                ctx.lineWidth = 1.5;
                 ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
             });
-
             ctx.shadowBlur = 0;
         }
 
         function loop() {
+            update();
+            draw();
             if (gameState === 'PLAYING') {
-                update();
-                draw();
                 requestAnimationFrame(loop);
-            } else if (gameState === 'PAUSED' || gameState === 'GAMEOVER') {
-                draw();
+            } else if (gameState === 'GAMEOVER') {
+                // 稍微跑幾格讓爆炸粒子動畫播完
+                let particleAnimationCount = 0;
+                function renderDeathAnim() {
+                    if (gameState === 'GAMEOVER' && particleAnimationCount < 40) {
+                        particleAnimationCount++;
+                        // 更新粒子
+                        for (let i = particles.length - 1; i >= 0; i--) {
+                            let p = particles[i];
+                            p.x += p.vx;
+                            p.y += p.vy;
+                            p.life--;
+                            if (p.life <= 0) particles.splice(i, 1);
+                        }
+                        draw();
+                        requestAnimationFrame(renderDeathAnim);
+                    }
+                }
+                renderDeathAnim();
             }
         }
 
