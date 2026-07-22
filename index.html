@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYBER DASH - 賽博幾何跑酷</title>
+    <title>賽博方程</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         * {
@@ -241,13 +241,13 @@
 </head>
 <body>
 
-    <!-- Minecraft 風格加載畫面 -->
+    <!-- 加載畫面 -->
     <div id="loader-screen">
-        <div class="loader-title">CYBER DASH SYSTEM</div>
+        <div class="loader-title">『賽博方程』加載中...</div>
         <div class="mc-progress-container">
             <div class="mc-progress-bar" id="mcBar"></div>
         </div>
-        <div class="mc-progress-text" id="mcText">Loading assets... 0%</div>
+        <div class="mc-progress-text" id="mcText">進度... 0%</div>
     </div>
 
     <div id="game-container">
@@ -255,15 +255,15 @@
         
         <div class="ui-layer" id="hud-layer">
             <div class="hud-left">
-                <div>分數 / SCORE: <span id="scoreVal">0</span></div>
-                <div>速度倍率 / SPEED: <span id="speedVal">1.0</span>x</div>
+                <div>分數 : <span id="scoreVal">0</span></div>
+                <div>速度倍率 : <span id="speedVal">1.0</span>x</div>
             </div>
             <button class="pause-btn" id="pauseBtn" onclick="togglePause()" title="暫停">❚❚</button>
         </div>
 
         <div class="overlay-screen" id="start-screen">
-            <h1>賽博幾何</h1>
-            <p>CYBER DASH // 雙向障礙極速跑酷</p>
+            <h1>賽博方程</h1>
+            <p>FR科技公司製作 本網站僅供演示效果使用</p>
             <button class="menu-btn" onclick="startGame()">點擊開始遊戲</button>
             <div class="controls-hint">操作方式：點擊螢幕 / 空白鍵 / 向上鍵跳躍（極速反應，觸地/天花板漸紅 0.5s 限制）</div>
         </div>
@@ -276,14 +276,14 @@
         </div>
 
         <div class="overlay-screen" id="gameover-screen">
-            <h2>系統崩潰</h2>
-            <p>最終得分 / FINAL SCORE: <span id="finalScoreVal">0</span></p>
+            <h2>系統完結</h2>
+            <p>最終得分 : <span id="finalScoreVal">0</span></p>
             <button class="menu-btn" onclick="restartGame()">重新遊玩</button>
         </div>
     </div>
 
     <script>
-        // Minecraft 風格進度條動態加載模擬
+        // 加載模擬
         let loadProgress = 0;
         const barElem = document.getElementById('mcBar');
         const textElem = document.getElementById('mcText');
@@ -322,9 +322,9 @@
             size: 38,
             vy: 0,
             gravity: baseGravity,
-            jumpPower: -16.2, // 提高跳躍爆發力，使控制更靈敏
+            jumpPower: -16.2, // 45
             rotation: 0,
-            targetRotation: 0, // 用於控制點擊瞬間逆轉一圈的目標角度
+            targetRotation: 0, // 3
             floorTimer: 0,
             ceilingTimer: 0
         };
@@ -396,7 +396,7 @@
 
         function confirmRestart() {
             if (gameState === 'PLAYING' || gameState === 'PAUSED') {
-                let check = confirm("遊戲正在進行中，確定要重新開始嗎？");
+                let check = confirm("遊戲正在進行中，確定要離開嗎？");
                 if (!check) return;
             }
             restartGame();
@@ -422,7 +422,7 @@
             player.targetRotation = 0;
             player.floorTimer = 0;
             player.ceilingTimer = 0;
-            frameCount = -70; // 死亡重回最一開始的起跑準備階段
+            frameCount = -70; // fr
         }
 
         function togglePause() {
@@ -518,7 +518,7 @@
                 player.ceilingTimer = 0;
             }
 
-            // 地板碰撞與 0.5 秒（30影格）限制判定
+            // 地板碰撞與 0.5 秒
             if (player.y >= bottomLimit) {
                 player.y = bottomLimit;
                 player.vy = 0;
@@ -656,11 +656,11 @@
             ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
             ctx.rotate(player.rotation);
 
-            // 計算貼地或貼天花板的變色程度（越久越紅，0.5秒 = 30格達到最紅）
+            // 計算貼地或貼天花板的變色程度
             let maxTimer = Math.max(player.floorTimer, player.ceilingTimer);
             let redRatio = Math.min(maxTimer / 30, 1.0);
 
-            // 基礎顏色為 #00f0ff，隨著 redRatio 增加逐漸轉變成鮮紅色 #ff0033
+            // #ff0033
             let r = Math.floor(0 + redRatio * 255);
             let g = Math.floor(240 * (1 - redRatio));
             let b = Math.floor(255 * (1 - redRatio));
