@@ -232,10 +232,11 @@
         .controls-hint {
             position: absolute;
             bottom: 20px;
-            font-size: 12px;
+            font-size: 11px;
             color: #718096;
             letter-spacing: 1px;
             text-align: center;
+            padding: 0 10px;
         }
     </style>
 </head>
@@ -265,7 +266,7 @@
             <h1>賽博方程</h1>
             <p>FR科技公司製作 本網站僅供演示效果使用</p>
             <button class="menu-btn" onclick="startGame()">點擊開始遊戲</button>
-            <div class="controls-hint">操作方式：點擊螢幕 / 空白鍵 / 向上鍵跳躍（極速反應，觸地/天花板漸紅 0.5s 限制）</div>
+            <div class="controls-hint">操作方式：點擊/空白鍵跳躍 | 長按 0.4s 啟動原地右向快進平移</div>
         </div>
 
         <div class="overlay-screen" id="pause-screen">
@@ -297,7 +298,6 @@
                 barElem.style.width = '100%';
                 textElem.innerText = 'Initializing... 100%';
                 
-                // 加載完成後觸發粉碎特效並移除加載幕
                 setTimeout(() => {
                     loaderScreen.classList.add('shatter');
                     setTimeout(() => loaderScreen.remove(), 600);
@@ -314,20 +314,26 @@
         let gameState = 'START';
         let score = 0;
         let gameSpeed = 8.0;
-        let baseGravity = 1.45; // 提高重力與靈敏度
+        let baseGravity = 1.45;
 
         let player = {
             x: 140,
+            baseX: 140,
             y: 220,
             size: 38,
             vy: 0,
             gravity: baseGravity,
-            jumpPower: -16.2, // 45
+            jumpPower: -16.2,
             rotation: 0,
-            targetRotation: 0, // 3
+            targetRotation: 0,
             floorTimer: 0,
-            ceilingTimer: 0
+            ceilingTimer: 0,
+            isDash: false
         };
+
+        // 長按計時與狀態變數
+        let pressTimer = null;
+        let isHolding = false;
 
         let obstacles = [];
         let particles = [];
@@ -343,11 +349,21 @@
             });
         }
 
+        // 按下事件
         window.addEventListener('keydown', e => {
             if (e.code === 'Space' || e.code === 'ArrowUp') {
                 e.preventDefault();
                 if (gameState === 'PLAYING') {
-                    jump();
+                    if (!isHolding) {
+                        isHolding = true;
+                        jump();
+                        // 啟動 0.4s (400ms) 長按判定
+                        pressTimer = setTimeout(() => {
+                            if (isHolding) {
+                                player.isDash = true;
+                            }
+                        }, 400);
+                    }
                 } else if (gameState === 'START') {
                     startGame();
                 } else if (gameState === 'GAMEOVER') {
@@ -361,16 +377,61 @@
             }
         });
 
-        canvas.addEventListener('click', (e) => {
-            if (gameState === 'PLAYING') {
-                jump();
+        // 釋放事件
+        window.addEventListener('keyup', e => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                handleRelease();
             }
         });
 
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameState === 'PLAYING') {
+                if (!isHolding) {
+                    isHolding = true;
+                    jump();
+                    pressTimer = setTimeout(() => {
+                        if (isHolding) {
+                            player.isDash = true;
+                        }
+                    }, 400);
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            handleRelease();
+        });
+
+        // 觸控支援
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameState === 'PLAYING') {
+                if (!isHolding) {
+                    isHolding = true;
+                    jump();
+                    pressTimer = setTimeout(() => {
+                        if (isHolding) {
+                            player.isDash = true;
+                        }
+                    }, 400);
+                }
+            }
+        });
+
+        window.addEventListener('touchend', () => {
+            handleRelease();
+        });
+
+        function handleRelease() {
+            isHolding = false;
+            player.isDash = false;
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        }
+
         function jump() {
             player.vy = player.jumpPower;
-            
-            // 按下空白鍵/點擊時，方塊逆轉一圈 (2 * Math.PI)
             player.targetRotation -= Math.PI * 2;
             
             for(let i = 0; i < 10; i++) {
@@ -416,19 +477,23 @@
             gameSpeed = 8.0;
             obstacles = [];
             particles = [];
+            player.x = 140;
             player.y = 220;
             player.vy = 0;
             player.rotation = 0;
             player.targetRotation = 0;
             player.floorTimer = 0;
             player.ceilingTimer = 0;
-            frameCount = -70; // fr
+            player.isDash = false;
+            handleRelease();
+            frameCount = -70;
         }
 
         function togglePause() {
             if (gameState === 'PLAYING') {
                 gameState = 'PAUSED';
                 document.getElementById('pause-screen').style.display = 'flex';
+                handleRelease();
             } else if (gameState === 'PAUSED') {
                 gameState = 'PLAYING';
                 document.getElementById('pause-screen').style.display = 'none';
@@ -499,13 +564,18 @@
             player.vy += player.gravity;
             player.y += player.vy;
 
-            // 平滑過渡旋轉角度：讓方塊在平常保持水平，點擊時逆轉一圈
+            // 長按 0.4s 觸發快進時，原地向右平移偏移量
+            let targetX = player.baseX;
+            if (player.isDash) {
+                targetX = player.baseX + 120; // 向右快進平移距離
+            }
+            player.x += (targetX - player.x) * 0.15;
+
             player.rotation += (player.targetRotation - player.rotation) * 0.2;
 
             const topLimit = 50;
             const bottomLimit = 450 - player.size;
 
-            // 天花板碰撞與 0.5 秒（30影格）限制判定
             if (player.y <= topLimit) {
                 player.y = topLimit;
                 player.vy = 0;
@@ -518,7 +588,6 @@
                 player.ceilingTimer = 0;
             }
 
-            // 地板碰撞與 0.5 秒
             if (player.y >= bottomLimit) {
                 player.y = bottomLimit;
                 player.vy = 0;
@@ -545,7 +614,7 @@
                     y: player.y + player.size / 2,
                     vx: -gameSpeed * 0.6,
                     vy: (Math.random() - 0.5) * 1.5,
-                    color: 'rgba(0, 240, 255, 0.7)',
+                    color: player.isDash ? 'rgba(255, 204, 0, 0.8)' : 'rgba(0, 240, 255, 0.7)',
                     size: Math.random() * 3 + 1,
                     life: 18
                 });
@@ -589,6 +658,7 @@
 
         function triggerGameOver() {
             gameState = 'GAMEOVER';
+            handleRelease();
             document.getElementById('hud-layer').style.display = 'none';
             document.getElementById('finalScoreVal').innerText = score;
             document.getElementById('gameover-screen').style.display = 'flex';
@@ -656,18 +726,22 @@
             ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
             ctx.rotate(player.rotation);
 
-            // 計算貼地或貼天花板的變色程度
             let maxTimer = Math.max(player.floorTimer, player.ceilingTimer);
             let redRatio = Math.min(maxTimer / 30, 1.0);
 
-            // #ff0033
             let r = Math.floor(0 + redRatio * 255);
             let g = Math.floor(240 * (1 - redRatio));
             let b = Math.floor(255 * (1 - redRatio));
+            
+            // 快進時方塊外觀轉為金黃色系特效
+            if (player.isDash) {
+                r = 255; g = 204; b = 0;
+            }
+
             let dynamicColor = `rgb(${r}, ${g}, ${b})`;
 
             ctx.fillStyle = dynamicColor;
-            ctx.shadowBlur = 22;
+            ctx.shadowBlur = player.isDash ? 30 : 22;
             ctx.shadowColor = dynamicColor;
             ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
 
