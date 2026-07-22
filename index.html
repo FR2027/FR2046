@@ -29,6 +29,42 @@
                 linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
             background-size: 100% 100%, 35px 35px, 35px 35px;
         }
+        
+        #loader-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #030408;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 240, 255, 0.1);
+            border-top: 4px solid #00f0ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+            margin-bottom: 20px;
+        }
+        .loader-text {
+            font-size: 16px;
+            letter-spacing: 3px;
+            color: #00f0ff;
+            text-shadow: 0 0 10px #00f0ff;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         #game-container {
             position: relative;
             width: 900px;
@@ -181,6 +217,11 @@
 </head>
 <body>
 
+    <div id="loader-screen">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">LOADING SYSTEM...</div>
+    </div>
+
     <div id="game-container">
         <canvas id="gameCanvas" width="900" height="500"></canvas>
         
@@ -196,14 +237,14 @@
             <h1>賽博幾何</h1>
             <p>CYBER DASH // 雙向障礙極速跑酷</p>
             <button class="menu-btn" onclick="startGame()">點擊開始遊戲</button>
-            <div class="controls-hint">操作方式：點擊螢幕 / 空白鍵 / 向上鍵跳躍（可觸地/天花板，但單次不得超過 0.5 秒）</div>
+            <div class="controls-hint">操作方式：點擊螢幕 / 空白鍵 / 向上鍵跳躍（觸碰地板/天花板限時 0.5 秒）</div>
         </div>
 
         <div class="overlay-screen" id="pause-screen">
             <h1>系統暫停</h1>
             <p>SYSTEM PAUSED</p>
             <button class="menu-btn" onclick="togglePause()">繼續遊戲</button>
-            <button class="menu-btn" onclick="restartGame()">重新開始</button>
+            <button class="menu-btn" onclick="confirmRestart()">重新開始</button>
         </div>
 
         <div class="overlay-screen" id="gameover-screen">
@@ -214,13 +255,21 @@
     </div>
 
     <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loader-screen');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 500);
+            }, 600);
+        });
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
         let gameState = 'START';
         let score = 0;
         let gameSpeed = 8.0;
-        let baseGravity = 0.90;
+        let baseGravity = 1.35; // 增加重力讓下降速度變快，手感更流暢
 
         let player = {
             x: 140,
@@ -228,9 +277,10 @@
             size: 38,
             vy: 0,
             gravity: baseGravity,
-            jumpPower: -13.0,
+            jumpPower: -14.5,
             rotation: 0,
-            touchTimer: 0 // 計算碰到邊界的持續時間（以影格計，以 60fps 計算 0.5 秒 = 30 影格）
+            floorTimer: 0,   // 碰地板計時器
+            ceilingTimer: 0  // 碰天花板計時器
         };
 
         let obstacles = [];
@@ -295,6 +345,14 @@
             requestAnimationFrame(loop);
         }
 
+        function confirmRestart() {
+            if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+                let check = confirm("遊戲正在進行中，確定要重新開始嗎？");
+                if (!check) return;
+            }
+            restartGame();
+        }
+
         function restartGame() {
             gameState = 'PLAYING';
             document.getElementById('pause-screen').style.display = 'none';
@@ -312,8 +370,9 @@
             player.y = 220;
             player.vy = 0;
             player.rotation = 0;
-            player.touchTimer = 0;
-            frameCount = -70;
+            player.floorTimer = 0;
+            player.ceilingTimer = 0;
+            frameCount = -70; // 死亡重生一樣回到一開始的起跑準備階段
         }
 
         function togglePause() {
@@ -394,29 +453,29 @@
             const topLimit = 50;
             const bottomLimit = 450 - player.size;
 
-            // 邊界碰撞與 0.5 秒（30個影格）限制判定
-            let isTouchingBoundary = false;
-
+            // 獨立計算天花板與地板的 0.5 秒（30個影格）限制判定
             if (player.y <= topLimit) {
                 player.y = topLimit;
                 player.vy = 0;
-                isTouchingBoundary = true;
-            } else if (player.y >= bottomLimit) {
-                player.y = bottomLimit;
-                player.vy = 0;
-                isTouchingBoundary = true;
-            }
-
-            if (isTouchingBoundary) {
-                player.touchTimer++;
-                // 30 影格約等於 0.5 秒 (以 60fps 計)
-                if (player.touchTimer > 30) {
+                player.ceilingTimer++;
+                if (player.ceilingTimer > 30) {
                     triggerGameOver();
                     return;
                 }
             } else {
-                // 只要離開地板或天花板就重置計時器
-                player.touchTimer = 0;
+                player.ceilingTimer = 0;
+            }
+
+            if (player.y >= bottomLimit) {
+                player.y = bottomLimit;
+                player.vy = 0;
+                player.floorTimer++;
+                if (player.floorTimer > 30) {
+                    triggerGameOver();
+                    return;
+                }
+            } else {
+                player.floorTimer = 0;
             }
 
             backgroundLines.forEach(line => {
