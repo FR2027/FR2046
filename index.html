@@ -111,7 +111,7 @@
             flex-direction: column;
         }
 
-        @media (min-width: 901) and (min-height: 501px) {
+        @media (min-width: 901px) and (min-height: 501px) {
             #game-container {
                 border-radius: 12px;
                 width: 900px;
@@ -342,7 +342,6 @@
         const gameContainerBox = document.getElementById('game-container');
         const mobileControls = document.getElementById('mobileControls');
 
-        // 偵測是否為行動裝置，決定是否顯示專屬虛擬按鈕
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
 
         let loadInterval = setInterval(() => {
@@ -368,8 +367,11 @@
 
         let gameState = 'START';
         let score = 0;
-        let gameSpeed = 8.0 * 1.3;
-        let baseGravity = 1.45;
+        let gameSpeed = 7.0 * 1.3;
+        
+        // 針對手機與高更新率螢幕調整更平緩的重力與跳躍力道
+        let baseGravity = isMobile ? 0.75 : 0.95;
+        let jumpPower = isMobile ? -11.5 : -13.0;
 
         let player = {
             x: 140,
@@ -378,7 +380,7 @@
             size: 38,
             vy: 0,
             gravity: baseGravity,
-            jumpPower: -16.2,
+            jumpPower: jumpPower,
             rotation: 0,
             targetRotation: 0,
             floorTimer: 0,
@@ -394,6 +396,7 @@
         let particles = [];
         let backgroundLines = [];
         let frameCount = 0;
+        let lastTime = performance.now();
 
         for (let i = 0; i < 8; i++) {
             backgroundLines.push({
@@ -435,14 +438,13 @@
             }
         });
 
-        // 桌面點擊畫布預設為單純跳躍，避免干擾
         canvas.addEventListener('mousedown', () => {
             if (!isMobile && gameState === 'PLAYING') {
                 jump();
             }
         });
 
-        // 手機專屬獨立按鈕事件綁定 (完美解決觸控手機版難以操作的問題)
+        // 手機專屬獨立按鈕事件綁定
         const mobJumpBtn = document.getElementById('mob-jump-btn');
         const mobDashBtn = document.getElementById('mob-dash-btn');
 
@@ -452,7 +454,7 @@
                 if (gameState === 'PLAYING') {
                     jump();
                 }
-            });
+            }, { passive: false });
             mobJumpBtn.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 if (gameState === 'PLAYING') {
@@ -477,7 +479,7 @@
                 }
             };
 
-            mobDashBtn.addEventListener('touchstart', startDashTouch);
+            mobDashBtn.addEventListener('touchstart', startDashTouch, { passive: false });
             mobDashBtn.addEventListener('touchend', endDashTouch);
             mobDashBtn.addEventListener('touchcancel', endDashTouch);
             mobDashBtn.addEventListener('mousedown', startDashTouch);
@@ -551,6 +553,7 @@
             }
 
             resetValues();
+            lastTime = performance.now();
             requestAnimationFrame(loop);
         }
 
@@ -580,7 +583,7 @@
 
         function resetValues() {
             score = 0;
-            gameSpeed = 8.0 * 1.3;
+            gameSpeed = 7.0 * 1.3;
             obstacles = [];
             particles = [];
             player.x = 140;
@@ -605,6 +608,7 @@
             } else if (gameState === 'PAUSED') {
                 gameState = 'PLAYING';
                 document.getElementById('pause-screen').style.display = 'none';
+                lastTime = performance.now();
                 requestAnimationFrame(loop);
             }
         }
@@ -634,7 +638,7 @@
                     height: h
                 });
             } else {
-                const minGap = 160; 
+                const minGap = 165; 
                 const maxTopH = totalHeight - minGap - 60;
                 const topH = Math.random() * (maxTopH - 60) + 60;
                 
@@ -658,8 +662,12 @@
             }
         }
 
-        function update() {
+        function update(dt) {
             if (gameState !== 'PLAYING') return;
+
+            // 確保 dt 係數穩定，避免畫面卡頓或高更新率造成物理崩潰
+            let timeScale = dt / (1000 / 60);
+            if (timeScale > 2.0) timeScale = 2.0;
 
             score += Math.floor(gameSpeed / 4);
 
@@ -671,24 +679,24 @@
             if (player.isDash) {
                 player.vy = 0;
             } else {
-                player.vy += player.gravity;
-                player.y += player.vy;
+                player.vy += player.gravity * timeScale;
+                player.y += player.vy * timeScale;
             }
 
             let targetX = player.baseX;
             if (player.isDash) {
                 targetX = player.baseX + 120;
             }
-            player.x += (targetX - player.x) * 0.4;
+            player.x += (targetX - player.x) * (0.4 * timeScale);
 
-            player.rotation += (player.targetRotation - player.rotation) * 0.2;
+            player.rotation += (player.targetRotation - player.rotation) * (0.2 * timeScale);
 
             const topLimit = 50;
 
             if (player.y <= topLimit) {
                 player.y = topLimit;
                 player.vy = 0;
-                player.ceilingTimer++;
+                player.ceilingTimer += timeScale;
                 if (player.ceilingTimer > 30) {
                     triggerGameOver();
                     return;
@@ -700,7 +708,7 @@
             if (player.y >= bottomLimit) {
                 player.y = bottomLimit;
                 player.vy = 0;
-                player.floorTimer++;
+                player.floorTimer += timeScale;
                 if (player.floorTimer > 30) {
                     triggerGameOver();
                     return;
@@ -710,7 +718,7 @@
             }
 
             backgroundLines.forEach(line => {
-                line.x -= line.speed * (gameSpeed * 0.3);
+                line.x -= line.speed * (gameSpeed * 0.3) * timeScale;
                 if (line.x < -100) {
                     line.x = canvas.width + 50;
                     line.y = Math.random() * canvas.height;
@@ -721,7 +729,7 @@
                 particles.push({
                     x: player.x,
                     y: player.y + player.size / 2,
-                    vx: -gameSpeed * 0.4,
+                    vx: -gameSpeed * 0.4 * timeScale,
                     vy: (Math.random() - 0.5) * 1.2,
                     color: player.isDash ? 'rgba(189, 0, 255, 0.8)' : 'rgba(0, 240, 255, 0.7)',
                     size: Math.random() * 2 + 1,
@@ -731,22 +739,22 @@
 
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
+                p.x += p.vx * timeScale;
+                p.y += p.vy * timeScale;
+                p.life -= timeScale;
                 if (p.life <= 0) particles.splice(i, 1);
             }
 
-            frameCount++;
+            frameCount += timeScale;
             if (frameCount >= 0) {
-                let spawnInterval = 75;
-                if (frameCount % spawnInterval === 0) {
+                let spawnInterval = 85;
+                if (Math.floor(frameCount) % spawnInterval < timeScale) {
                     spawnObstacle();
                 }
             }
 
             for (let i = obstacles.length - 1; i >= 0; i--) {
-                obstacles[i].x -= gameSpeed;
+                obstacles[i].x -= gameSpeed * timeScale;
 
                 let padding = 7;
                 if (
@@ -891,9 +899,14 @@
             ctx.shadowBlur = 0;
         }
 
-        function loop() {
-            update();
+        function loop(timestamp) {
+            let dt = timestamp - lastTime;
+            if (!dt || dt > 200) dt = 16.67;
+            lastTime = timestamp;
+
+            update(dt);
             draw();
+
             if (gameState === 'PLAYING') {
                 requestAnimationFrame(loop);
             } else if (gameState === 'GAMEOVER') {
