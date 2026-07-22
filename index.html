@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>賽博疾風 - 高科技電競跑酷</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Orbitron', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #030408;
+            color: #00f0ff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+        #game-container {
+            position: relative;
+            width: 900px;
+            max-width: 100%;
+            height: 500px;
+            background: rgba(10, 11, 20, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.1);
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        /* 遊戲中 HUD 介面 */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+            justify-content: space-between;
+            padding: 25px;
+            z-index: 5;
+        }
+        .hud-left {
+            font-size: 16px;
+            text-shadow: 0 0 10px #00f0ff;
+            letter-spacing: 1px;
+            line-height: 1.6;
+        }
+        .hud-left span {
+            color: #ffffff;
+            font-weight: 900;
+        }
+        .pause-btn {
+            pointer-events: auto;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid #00f0ff;
+            color: #00f0ff;
+            padding: 10px 20px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            backdrop-filter: blur(5px);
+            border-radius: 4px;
+        }
+        .pause-btn:hover {
+            background: #00f0ff;
+            color: #030408;
+            box-shadow: 0 0 25px #00f0ff;
+            transform: scale(1.05);
+        }
+        /* 高質感毛玻璃遮罩面板 */
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 6, 12, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        .overlay-screen h1 {
+            font-size: 42px;
+            margin-bottom: 8px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px #00f0ff, 0 0 40px rgba(0, 240, 255, 0.5);
+            color: #fff;
+            text-align: center;
+            font-weight: 900;
+        }
+        .overlay-screen h2 {
+            font-size: 36px;
+            margin-bottom: 12px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px #ff0055, 0 0 40px rgba(255, 0, 85, 0.5);
+            color: #ff0055;
+            text-align: center;
+            font-weight: 900;
+        }
+        .overlay-screen p {
+            font-size: 14px;
+            margin-bottom: 30px;
+            color: #a0aec0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .menu-btn {
+            background: rgba(0, 240, 255, 0.08);
+            border: 2px solid #00f0ff;
+            color: #00f0ff;
+            padding: 14px 40px;
+            font-size: 18px;
+            font-weight: 900;
+            cursor: pointer;
+            margin: 8px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+            backdrop-filter: blur(6px);
+            letter-spacing: 2px;
+            border-radius: 4px;
+            pointer-events: auto;
+        }
+        .menu-btn:hover {
+            background: #00f0ff;
+            color: #030408;
+            box-shadow: 0 0 35px #00f0ff, inset 0 0 10px rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        .menu-btn:active {
+            transform: translateY(1px);
+        }
+        #pause-screen {
+            display: none;
+        }
+        #gameover-screen {
+            display: none;
+        }
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            font-size: 12px;
+            color: #718096;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="900" height="500"></canvas>
+        
+        <!-- 遊戲中 HUD 介面 -->
+        <div class="ui-layer" id="hud-layer">
+            <div class="hud-left">
+                <div>分數 / SCORE: <span id="scoreVal">0</span></div>
+                <div>速度倍率 / SPEED: <span id="speedVal">1.0</span>x</div>
+            </div>
+            <button class="pause-btn" id="pauseBtn" onclick="togglePause()">暫停 / PAUSE</button>
+        </div>
+
+        <!-- 1. 開始畫面 -->
+        <div class="overlay-screen" id="start-screen">
+            <h1>賽博疾風</h1>
+            <p>CYBER RUN // 高科技極速跑酷電競</p>
+            <button class="menu-btn" onclick="startGame()">點擊開始遊戲</button>
+            <div class="controls-hint">操作方式：電腦請按空白鍵 / 向上鍵，手機直接點擊畫面跳躍</div>
+        </div>
+
+        <!-- 2. 暫停選單 -->
+        <div class="overlay-screen" id="pause-screen">
+            <h1>系統暫停</h1>
+            <p>SYSTEM PAUSED</p>
+            <button class="menu-btn" onclick="togglePause()">繼續遊戲</button>
+            <button class="menu-btn" onclick="restartGame()">重新開始</button>
+        </div>
+
+        <!-- 3. 遊戲結束畫面 -->
+        <div class="overlay-screen" id="gameover-screen">
+            <h2>系統崩潰</h2>
+            <p>最終得分 / FINAL SCORE: <span id="finalScoreVal">0</span></p>
+            <button class="menu-btn" onclick="restartGame()">重新遊玩</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 遊戲狀態：'START', 'PLAYING', 'PAUSED', 'GAMEOVER'
+        let gameState = 'START';
+
+        let score = 0;
+        let gameSpeed = 6;
+        let baseGravity = 0.85;
+
+        // 玩家物件
+        let player = {
+            x: 120,
+            y: 380,
+            width: 34,
+            height: 48,
+            vy: 0,
+            gravity: baseGravity,
+            jumpPower: -14.5,
+            isGrounded: true
+        };
+
+        let obstacles = [];
+        let particles = [];
+        let frameCount = 0;
+
+        // 鍵盤控制監聽
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                if (gameState === 'PLAYING') {
+                    jump();
+                } else if (gameState === 'START') {
+                    startGame();
+                } else if (gameState === 'GAMEOVER') {
+                    restartGame();
+                }
+            }
+            if (e.code === 'Escape') {
+                if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+                    togglePause();
+                }
+            }
+        });
+
+        // 畫布點擊控制跳躍（支援手機與滑鼠）
+        canvas.addEventListener('click', (e) => {
+            if (gameState === 'PLAYING') {
+                jump();
+            }
+        });
+
+        function jump() {
+            if (player.isGrounded) {
+                player.vy = player.jumpPower;
+                player.isGrounded = false;
+                // 產生高科技跳躍粒子特效
+                for(let i = 0; i < 8; i++) {
+                    particles.push({
+                        x: player.x + player.width / 2,
+                        y: player.y + player.height,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: Math.random() * 3 + 1,
+                        color: '#00f0ff',
+                        life: 20
+                    });
+                }
+            }
+        }
+
+        // 開始遊戲
+        function startGame() {
+            gameState = 'PLAYING';
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('hud-layer').style.display = 'flex';
+            resetValues();
+            requestAnimationFrame(loop);
+        }
+
+        // 重新遊玩
+        function restartGame() {
+            gameState = 'PLAYING';
+            document.getElementById('pause-screen').style.display = 'none';
+            document.getElementById('gameover-screen').style.display = 'none';
+            document.getElementById('hud-layer').style.display = 'flex';
+            document.getElementById('pauseBtn').innerText = '暫停 / PAUSE';
+            resetValues();
+            requestAnimationFrame(loop);
+        }
+
+        function resetValues() {
+            score = 0;
+            gameSpeed = 6;
+            obstacles = [];
+            particles = [];
+            player.y = 380;
+            player.vy = 0;
+            player.isGrounded = true;
+            frameCount = 0;
+        }
+
+        // 暫停切換
+        function togglePause() {
+            if (gameState === 'PLAYING') {
+                gameState = 'PAUSED';
+                document.getElementById('pause-screen').style.display = 'flex';
+                document.getElementById('pauseBtn').innerText = '繼續 / RESUME';
+            } else if (gameState === 'PAUSED') {
+                gameState = 'PLAYING';
+                document.getElementById('pause-screen').style.display = 'none';
+                document.getElementById('pauseBtn').innerText = '暫停 / PAUSE';
+                requestAnimationFrame(loop);
+            }
+        }
+
+        // 生成障礙物
+        function spawnObstacle() {
+            const height = Math.random() * 50 + 25;
+            const width = Math.random() * 15 + 22;
+            obstacles.push({
+                x: canvas.width,
+                y: 430 - height,
+                width: width,
+                height: height
+            });
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // 速度隨著時間越跑越快
+            gameSpeed += 0.002;
+            score += Math.floor(gameSpeed / 3);
+
+            document.getElementById('scoreVal').innerText = score;
+            document.getElementById('speedVal').innerText = (gameSpeed / 6).toFixed(1);
+
+            // 玩家物理運算
+            player.vy += player.gravity;
+            player.y += player.vy;
+
+            // 地板碰撞
+            if (player.y > 382) {
+                player.y = 382;
+                player.vy = 0;
+                player.isGrounded = true;
+            }
+
+            // 跑動尾跡粒子
+            if (player.isGrounded && frameCount % 3 === 0) {
+                particles.push({
+                    x: player.x,
+                    y: player.y + player.height,
+                    vx: -gameSpeed * 0.5,
+                    vy: (Math.random() - 0.5) * 1,
+                    color: 'rgba(0, 240, 255, 0.6)',
+                    life: 15
+                });
+            }
+
+            // 粒子更新
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            // 障礙物生成頻率隨速度加快
+            frameCount++;
+            let spawnInterval = Math.max(30, Math.floor(90 - gameSpeed * 3.5));
+            if (frameCount % spawnInterval === 0) {
+                spawnObstacle();
+            }
+
+            // 移動與碰撞檢測
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= gameSpeed;
+
+                // 精確 AABB 碰撞箱檢查
+                let padding = 6;
+                if (
+                    player.x + padding < obstacles[i].x + obstacles[i].width - padding &&
+                    player.x + player.width - padding > obstacles[i].x + padding &&
+                    player.y + padding < obstacles[i].y + obstacles[i].height - padding &&
+                    player.y + player.height - padding > obstacles[i].y + padding
+                ) {
+                    gameState = 'GAMEOVER';
+                    document.getElementById('hud-layer').style.display = 'none';
+                    document.getElementById('finalScoreVal').innerText = score;
+                    document.getElementById('gameover-screen').style.display = 'flex';
+                }
+
+                // 移除超出畫面的障礙物
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            // 清空畫面背景
+            ctx.fillStyle = '#0a0b14';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 背景動態霓虹網格線條
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
+            ctx.lineWidth = 1;
+            let gridOffset = (frameCount * (gameSpeed * 0.5)) % 40;
+            for (let x = -gridOffset; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            // 科技感地平面
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#00f0ff';
+            ctx.beginPath();
+            ctx.moveTo(0, 430);
+            ctx.lineTo(canvas.width, 430);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // 地面發光漸層底條
+            let floorGradient = ctx.createLinearGradient(0, 430, 0, 500);
+            floorGradient.addColorStop(0, 'rgba(0, 240, 255, 0.25)');
+            floorGradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = floorGradient;
+            ctx.fillRect(0, 430, canvas.width, 70);
+
+            // 繪製粒子
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, 3, 3);
+            });
+
+            // 玩家機甲方塊
+            ctx.fillStyle = '#00f0ff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00f0ff';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // 核心高光
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(player.x + 8, player.y + 8, player.width - 16, player.height - 16);
+
+            // 障礙物（霓虹粉紅）
+            ctx.fillStyle = '#ff0055';
+            ctx.shadowColor = '#ff0055';
+            obstacles.forEach(obs => {
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+            });
+
+            ctx.shadowBlur = 0;
+        }
+
+        function loop() {
+            if (gameState === 'PLAYING') {
+                update();
+                draw();
+                requestAnimationFrame(loop);
+            } else if (gameState === 'PAUSED' || gameState === 'GAMEOVER') {
+                draw();
+            }
+        }
+
+        // 初始渲染背景
+        draw();
+    </script>
+</body>
+</html>
