@@ -555,9 +555,8 @@
 
         let gameState = 'START';
         let score = 0;
-        let gameSpeed = isMobile ? 8.5 : 7.0; // 電腦端初始速度再慢一點
+        let gameSpeed = isMobile ? 8.5 : 7.0;
         
-        // 電腦端重力調小、跳躍力道調小（更輕盈好控制）、靈敏度維持即時反應
         let baseGravity = isMobile ? 0.85 : 0.75;
         let jumpPower = isMobile ? -12.0 : -11.0;
 
@@ -959,16 +958,21 @@
 
             frameCount += timeScale;
             if (frameCount >= 0) {
-                let spawnInterval = isMobile ? 75 : 85;
+                let spawnInterval = isMobile ? 85 : 95; // 稍微拉開障礙物產生的時間間距，避免重疊
                 if (Math.floor(frameCount) % spawnInterval < timeScale) {
-                    spawnObstacle();
+                    // 確保畫面最右側已經沒有剛生成的障礙物太靠近，避免隨機連續疊在一起
+                    let lastObs = obstacles[obstacles.length - 1];
+                    if (!lastObs || lastObs.x < canvas.width - 160) {
+                        spawnObstacle();
+                    }
                 }
             }
 
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].x -= gameSpeed * timeScale;
 
-                let padding = 6;
+                // 稍微收緊碰撞判定邊距（從 6 改為 8），給玩家多一點容錯空間，徹底解決邊緣穿模誤判
+                let padding = 8;
                 if (
                     player.x + padding < obstacles[i].x + obstacles[i].width - padding &&
                     player.x + player.size - padding > obstacles[i].x + padding &&
