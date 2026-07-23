@@ -139,17 +139,24 @@
             z-index: 5;
         }
         .hud-left {
-            font-size: 14px;
+            font-size: 15px;
             text-shadow: 0 0 10px #00f0ff;
             letter-spacing: 1px;
             line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .hud-left span {
             color: #ffffff;
             font-weight: 900;
         }
-        .pause-btn {
+        .hud-right {
+            display: flex;
+            gap: 10px;
             pointer-events: auto;
+        }
+        .hud-btn {
             background: rgba(0, 240, 255, 0.12);
             border: 1px solid #00f0ff;
             color: #00f0ff;
@@ -165,6 +172,11 @@
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+        .hud-btn.muted {
+            border-color: #ff0055;
+            color: #ff0055;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
         }
         .overlay-screen {
             position: absolute;
@@ -300,10 +312,12 @@
         
         <div class="ui-layer" id="hud-layer">
             <div class="hud-left">
-                <div>分數 : <span id="scoreVal">0</span></div>
-                <div>速度倍率 : <span id="speedVal">1.5</span>x</div>
+                <div>SCORE : <span id="scoreVal">0</span></div>
             </div>
-            <button class="pause-btn" id="pauseBtn" onclick="togglePause()" title="暫停">❚❚</button>
+            <div class="hud-right">
+                <button class="hud-btn" id="audioToggleBtn" onclick="toggleAudio()" title="音效開關">🔊</button>
+                <button class="hud-btn" id="pauseBtn" onclick="togglePause()" title="暫停">❚❚</button>
+            </div>
         </div>
 
         <div class="mobile-controls" id="mobileControls">
@@ -342,9 +356,10 @@
 
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
 
-        // Web Audio API 音效與 BGM 系統
+        // Web Audio API 與全新電子音樂 (EDM) 系統
         let audioCtx = null;
         let bgmInterval = null;
+        let isMuted = false;
 
         function initAudio() {
             if (!audioCtx) {
@@ -355,62 +370,75 @@
             }
         }
 
+        function toggleAudio() {
+            initAudio();
+            isMuted = !isMuted;
+            const btn = document.getElementById('audioToggleBtn');
+            if (isMuted) {
+                btn.innerText = '🔇';
+                btn.classList.add('muted');
+            } else {
+                btn.innerText = '🔊';
+                btn.classList.remove('muted');
+            }
+        }
+
         function playJumpSound() {
-            if (!audioCtx) return;
+            if (!audioCtx || isMuted) return;
             try {
                 let osc = audioCtx.createOscillator();
                 let gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.15);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(700, audioCtx.currentTime + 0.12);
                 
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
                 
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.15);
+                osc.stop(audioCtx.currentTime + 0.12);
             } catch(e) {}
         }
 
         function playDashSound() {
-            if (!audioCtx) return;
+            if (!audioCtx || isMuted) return;
             try {
                 let osc = audioCtx.createOscillator();
                 let gain = audioCtx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(350, audioCtx.currentTime + 0.3);
+                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.25);
                 
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
                 
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
+                osc.stop(audioCtx.currentTime + 0.25);
             } catch(e) {}
         }
 
         function playCrashSound() {
-            if (!audioCtx) return;
+            if (!audioCtx || isMuted) return;
             try {
                 let node = audioCtx.createBufferSource();
                 let buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.4, audioCtx.sampleRate);
                 let data = buffer.getChannelData(0);
                 for (let i = 0; i < buffer.length; i++) {
-                    data[i] = Math.random() * 2 - 1;
+                    data[i] = (Math.random() * 2 - 1);
                 }
                 node.buffer = buffer;
                 
                 let gain = audioCtx.createGain();
-                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
                 
                 let filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.value = 600;
+                filter.type = 'bandpass';
+                filter.frequency.value = 800;
 
                 node.connect(filter);
                 filter.connect(gain);
@@ -419,28 +447,78 @@
             } catch(e) {}
         }
 
+        // 升級為強烈節奏感的賽博電子音樂 (Cyberpunk EDM 循環)
         function startBGM() {
             stopBGM();
-            let notes = [220, 261.63, 329.63, 392, 440, 523.25];
+            // 酷炫低音電音頻率 (Am 轉敏捷音階)
+            let bassNotes = [110, 110, 130.81, 146.83, 110, 98, 110, 164.81];
+            let leadNotes = [220, 329.63, 440, 523.25, 440, 392, 329.63, 293.66];
             let step = 0;
+
             bgmInterval = setInterval(() => {
-                if (!audioCtx || gameState !== 'PLAYING') return;
+                if (!audioCtx || gameState !== 'PLAYING' || isMuted) return;
                 try {
-                    let osc = audioCtx.createOscillator();
-                    let gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(notes[step % notes.length], audioCtx.currentTime);
+                    let t = audioCtx.currentTime;
+
+                    // 1. 強力重拍低音 (Bassline - Sawtooth)
+                    let bassOsc = audioCtx.createOscillator();
+                    let bassGain = audioCtx.createGain();
+                    let bassFilter = audioCtx.createBiquadFilter();
                     
-                    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
-                    gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                    bassOsc.type = 'sawtooth';
+                    bassOsc.frequency.setValueAtTime(bassNotes[step % bassNotes.length], t);
                     
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.2);
+                    bassFilter.type = 'lowpass';
+                    bassFilter.frequency.setValueAtTime(400 + (step % 2 === 0 ? 300 : 0), t);
+
+                    bassGain.gain.setValueAtTime(0.08, t);
+                    bassGain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+
+                    bassOsc.connect(bassFilter);
+                    bassFilter.connect(bassGain);
+                    bassGain.connect(audioCtx.destination);
+                    
+                    bassOsc.start(t);
+                    bassOsc.stop(t + 0.18);
+
+                    // 2. 旋律高音 (Lead Synth - Square)
+                    if (step % 2 === 0) {
+                        let leadOsc = audioCtx.createOscillator();
+                        let leadGain = audioCtx.createGain();
+                        
+                        leadOsc.type = 'square';
+                        leadOsc.frequency.setValueAtTime(leadNotes[(step / 2) % leadNotes.length], t);
+
+                        leadGain.gain.setValueAtTime(0.05, t);
+                        leadGain.gain.linearRampToValueAtTime(0.001, t + 0.12);
+
+                        leadOsc.connect(leadGain);
+                        leadGain.connect(audioCtx.destination);
+                        
+                        leadOsc.start(t);
+                        leadOsc.stop(t + 0.12);
+                    }
+
+                    // 3. 電子鼓點 (Kick / Snare 仿真噪點)
+                    if (step % 4 === 0) {
+                        let kickOsc = audioCtx.createOscillator();
+                        let kickGain = audioCtx.createGain();
+                        kickOsc.type = 'sine';
+                        kickOsc.frequency.setValueAtTime(150, t);
+                        kickOsc.frequency.exponentialRampToValueAtTime(30, t + 0.08);
+
+                        kickGain.gain.setValueAtTime(0.15, t);
+                        kickGain.gain.linearRampToValueAtTime(0.001, t + 0.08);
+
+                        kickOsc.connect(kickGain);
+                        kickGain.connect(audioCtx.destination);
+                        kickOsc.start(t);
+                        kickOsc.stop(t + 0.08);
+                    }
+
                     step++;
                 } catch(e) {}
-            }, 250);
+            }, 125); // 快速節奏 (約 120 BPM 雙倍取樣)
         }
 
         function stopBGM() {
@@ -473,9 +551,8 @@
 
         let gameState = 'START';
         let score = 0;
-        let gameSpeed = 8.5; // 提升雙平台流暢速度感
+        let gameSpeed = 8.5;
         
-        // 速度與物理參數獨立微調
         let baseGravity = isMobile ? 0.85 : 1.35;
         let jumpPower = isMobile ? -12.0 : -15.5;
 
@@ -513,7 +590,6 @@
             });
         }
 
-        // 鍵盤控制 (電腦版)
         window.addEventListener('keydown', e => {
             if (e.code === 'Space' || e.code === 'ArrowUp') {
                 e.preventDefault();
@@ -545,7 +621,6 @@
             }
         });
 
-        // 電腦滑鼠點擊與長按平移支援
         canvas.addEventListener('mousedown', (e) => {
             initAudio();
             if (!isMobile && gameState === 'PLAYING') {
@@ -569,7 +644,6 @@
             }
         });
 
-        // 手機專屬獨立按鈕事件綁定
         const mobJumpBtn = document.getElementById('mob-jump-btn');
         const mobDashBtn = document.getElementById('mob-dash-btn');
 
@@ -773,7 +847,6 @@
                     height: h
                 });
             } else {
-                // 確保上下障礙物保持完美安全間距，絕不重疊且難易度適中
                 const minGap = 175; 
                 const maxTopH = totalHeight - minGap - 50;
                 const topH = Math.random() * (maxTopH - 50) + 50;
@@ -807,7 +880,6 @@
             score += Math.floor(gameSpeed / 4);
 
             document.getElementById('scoreVal').innerText = score;
-            document.getElementById('speedVal').innerText = '1.5';
 
             const bottomLimit = 450 - player.size;
 
@@ -888,7 +960,6 @@
                 }
             }
 
-            // 精準碰撞判定（加入適當安全寬容內縮，避免幽靈死法與穿模）
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].x -= gameSpeed * timeScale;
 
