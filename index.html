@@ -173,6 +173,11 @@
             justify-content: center;
             align-items: center;
         }
+        .hud-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
         .hud-btn.muted {
             border-color: #ff0055;
             color: #ff0055;
@@ -315,8 +320,12 @@
                 <div>SCORE : <span id="scoreVal">0</span></div>
             </div>
             <div class="hud-right">
-                <button class="hud-btn" id="audioToggleBtn" onclick="toggleAudio()" title="音效開關">🔊</button>
-                <button class="hud-btn" id="pauseBtn" onclick="togglePause()" title="暫停">❚❚</button>
+                <button class="hud-btn" id="audioToggleBtn" onclick="toggleAudio()" title="音效開關">
+                    <svg id="audioIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                </button>
+                <button class="hud-btn" id="pauseBtn" onclick="togglePause()" title="暫停">
+                    <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
             </div>
         </div>
 
@@ -356,7 +365,6 @@
 
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
 
-        // Web Audio API 與全新電子音樂 (EDM) 系統
         let audioCtx = null;
         let bgmInterval = null;
         let isMuted = false;
@@ -374,11 +382,12 @@
             initAudio();
             isMuted = !isMuted;
             const btn = document.getElementById('audioToggleBtn');
+            const iconSvg = document.getElementById('audioIcon');
             if (isMuted) {
-                btn.innerText = '🔇';
+                iconSvg.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
                 btn.classList.add('muted');
             } else {
-                btn.innerText = '🔊';
+                iconSvg.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
                 btn.classList.remove('muted');
             }
         }
@@ -447,10 +456,8 @@
             } catch(e) {}
         }
 
-        // 升級為強烈節奏感的賽博電子音樂 (Cyberpunk EDM 循環)
         function startBGM() {
             stopBGM();
-            // 酷炫低音電音頻率 (Am 轉敏捷音階)
             let bassNotes = [110, 110, 130.81, 146.83, 110, 98, 110, 164.81];
             let leadNotes = [220, 329.63, 440, 523.25, 440, 392, 329.63, 293.66];
             let step = 0;
@@ -460,7 +467,6 @@
                 try {
                     let t = audioCtx.currentTime;
 
-                    // 1. 強力重拍低音 (Bassline - Sawtooth)
                     let bassOsc = audioCtx.createOscillator();
                     let bassGain = audioCtx.createGain();
                     let bassFilter = audioCtx.createBiquadFilter();
@@ -481,7 +487,6 @@
                     bassOsc.start(t);
                     bassOsc.stop(t + 0.18);
 
-                    // 2. 旋律高音 (Lead Synth - Square)
                     if (step % 2 === 0) {
                         let leadOsc = audioCtx.createOscillator();
                         let leadGain = audioCtx.createGain();
@@ -499,7 +504,6 @@
                         leadOsc.stop(t + 0.12);
                     }
 
-                    // 3. 電子鼓點 (Kick / Snare 仿真噪點)
                     if (step % 4 === 0) {
                         let kickOsc = audioCtx.createOscillator();
                         let kickGain = audioCtx.createGain();
@@ -518,7 +522,7 @@
 
                     step++;
                 } catch(e) {}
-            }, 125); // 快速節奏 (約 120 BPM 雙倍取樣)
+            }, 125);
         }
 
         function stopBGM() {
@@ -551,10 +555,11 @@
 
         let gameState = 'START';
         let score = 0;
-        let gameSpeed = 8.5;
+        let gameSpeed = isMobile ? 8.5 : 7.0; // 電腦端初始速度再慢一點
         
-        let baseGravity = isMobile ? 0.85 : 1.35;
-        let jumpPower = isMobile ? -12.0 : -15.5;
+        // 電腦端重力調小、跳躍力道調小（更輕盈好控制）、靈敏度維持即時反應
+        let baseGravity = isMobile ? 0.85 : 0.75;
+        let jumpPower = isMobile ? -12.0 : -11.0;
 
         let player = {
             x: 140,
@@ -790,7 +795,7 @@
 
         function resetValues() {
             score = 0;
-            gameSpeed = 8.5;
+            gameSpeed = isMobile ? 8.5 : 7.0;
             obstacles = [];
             particles = [];
             player.x = 140;
@@ -847,7 +852,7 @@
                     height: h
                 });
             } else {
-                const minGap = 175; 
+                const minGap = 185; 
                 const maxTopH = totalHeight - minGap - 50;
                 const topH = Math.random() * (maxTopH - 50) + 50;
                 
@@ -954,7 +959,7 @@
 
             frameCount += timeScale;
             if (frameCount >= 0) {
-                let spawnInterval = 75;
+                let spawnInterval = isMobile ? 75 : 85;
                 if (Math.floor(frameCount) % spawnInterval < timeScale) {
                     spawnObstacle();
                 }
